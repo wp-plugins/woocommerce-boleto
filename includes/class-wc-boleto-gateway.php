@@ -367,7 +367,8 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
                         'default' => '03',
                         'options' => array(
                             '03' => '03',
-                            '06' => '06'
+                            '06' => '06',
+                            '09' => '09'
                         )
                     )
                 );
@@ -526,10 +527,10 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
                         'options' => array(
                             '104' => '104',
                             '109' => '109',
+                            '157' => '157',
                             '174' => '174',
                             '175' => '175',
-                            '178' => '178',
-                            '157' => '157'
+                            '178' => '178'
                         )
                     )
                 );
