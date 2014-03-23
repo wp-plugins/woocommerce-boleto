@@ -2,8 +2,8 @@
 Contributors: claudiosanches, deblyn
 Tags: woocommerce, boleto, banco do brasil, bradesco, caixa, hsbc, itau, nossa caixa, real, santander, unibanco
 Requires at least: 3.8
-Tested up to: 3.8
-Stable tag: 1.1.2
+Tested up to: 3.8.1
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,11 +45,11 @@ Você pode esclarecer suas dúvidas usando:
 
 * A nossa sessão de [FAQ](http://wordpress.org/extend/plugins/woocommerce-boleto/faq/).
 * Criando um tópico no [fórum de ajuda do WordPress](http://wordpress.org/support/plugin/woocommerce-boleto) (apenas em inglês).
-* Criando um *Issue* em nosso [fórum no GitHub](https://github.com/wpbrasil/woocommerce-boleto/issues) (em português).
+* Criando um *Issue* em nosso [fórum no GitHub](https://github.com/claudiosmweb/woocommerce-boleto/issues) (em português).
 
 = Quer colaborar? =
 
-Envie sugestões ou *Pull Requests* em [GitHub](https://github.com/wpbrasil/woocommerce-boleto/).
+Envie sugestões ou *Pull Requests* em [GitHub](https://github.com/claudiosmweb/woocommerce-boleto/).
 
 = Créditos =
 
@@ -129,7 +129,7 @@ O plugin permite que você venda utilizando boletos de apenas um banco.
 
 = Mais dúvidas relacionadas ao funcionamento do plugin? =
 
-Crie um *Issue* em nosso [fórum no GitHub](https://github.com/wpbrasil/woocommerce-boleto/issues) (em português).
+Crie um *Issue* em nosso [fórum no GitHub](https://github.com/claudiosmweb/woocommerce-boleto/issues) (em português).
 
 = São aceitos arquivos de retorno? =
 
@@ -137,7 +137,7 @@ Infelizmente não.
 
 = Quer colaborar? =
 
-Envie sugestões ou *Pull Requests* em [GitHub](https://github.com/wpbrasil/woocommerce-boleto/).
+Envie sugestões ou *Pull Requests* em [GitHub](https://github.com/claudiosmweb/woocommerce-boleto/).
 
 == Screenshots ==
 
@@ -145,6 +145,10 @@ Envie sugestões ou *Pull Requests* em [GitHub](https://github.com/wpbrasil/wooc
 2. Shop order metabox.
 
 == Changelog ==
+
+= 1.2.0 - 23/03/2013 =
+
+* Melhorada a forma de abrir os boletos, foi removida a página e adicionada em seu lugar um endpoint, desta forma evitamos conflitos com alguns temas.
 
 = 1.1.2 - 29/12/2013 =
 
@@ -189,9 +193,9 @@ Envie sugestões ou *Pull Requests* em [GitHub](https://github.com/wpbrasil/wooc
 
 == Upgrade Notice ==
 
-= 1.1.2 =
+= 1.2.0 =
 
-* Correção do template do boleto da Caixa Econômica Federal - SIGCB.
+* Melhorada a forma de abrir os boletos, foi removida a página e adicionada em seu lugar um endpoint, desta forma evitamos conflitos com alguns temas.
 
 == License ==
 
