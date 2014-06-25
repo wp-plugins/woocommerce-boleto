@@ -4,15 +4,15 @@
  * Plugin URI: https://github.com/claudiosmweb/woocommerce-boleto
  * Description: WooCommerce Boleto is a brazilian payment gateway for WooCommerce
  * Author: claudiosanches, deblyn
- * Author URI: https://github.com/wpbrasil/
- * Version: 1.2.2
+ * Author URI: http://claudiosmweb.com
+ * Version: 1.3.0
  * License: GPLv2 or later
  * Text Domain: woocommerce-boleto
  * Domain Path: /languages/
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
 if ( ! class_exists( 'WC_Boleto' ) ) :
@@ -25,51 +25,45 @@ class WC_Boleto {
 	/**
 	 * Plugin version.
 	 *
-	 * @since 1.2.2
-	 *
-	 * @var   string
+	 * @var string
 	 */
-	const VERSION = '1.2.2';
-
-	/**
-	 * Integration id.
-	 *
-	 * @since 1.2.0
-	 *
-	 * @var   string
-	 */
-	protected static $gateway_id = 'boleto';
-
-	/**
-	 * Plugin slug.
-	 *
-	 * @since 1.2.0
-	 *
-	 * @var   string
-	 */
-	protected static $plugin_slug = 'woocommerce-boleto';
+	const VERSION = '1.3.0';
 
 	/**
 	 * Instance of this class.
 	 *
-	 * @since 1.2.0
-	 *
-	 * @var   object
+	 * @var object
 	 */
 	protected static $instance = null;
 
-	public function __construct() {
+	/**
+	 * Initialize the plugin actions.
+	 */
+	private function __construct() {
 		// Load plugin text domain
 		add_action( 'init', array( $this, 'load_plugin_textdomain' ) );
 
-		// Initialize the plugin actions.
-		$this->init();
+		// Checks with WooCommerce is installed.
+		if ( class_exists( 'WC_Payment_Gateway' ) ) {
+			// Public includes.
+			$this->includes();
+
+			// Admin includes.
+			if ( is_admin() ) {
+				$this->admin_includes();
+			}
+
+			add_filter( 'woocommerce_payment_gateways', array( $this, 'add_gateway' ) );
+			add_action( 'init', array( $this, 'add_boleto_endpoint' ) );
+			add_action( 'template_redirect', array( $this, 'boleto_template' ) );
+			add_action( 'woocommerce_view_order', array( $this, 'pending_payment_message' ) );
+		} else {
+			add_action( 'admin_notices', array( $this, 'woocommerce_missing_notice' ) );
+		}
 	}
 
 	/**
 	 * Return an instance of this class.
-	 *
-	 * @since  1.2.0
 	 *
 	 * @return object A single instance of this class.
 	 */
@@ -83,68 +77,37 @@ class WC_Boleto {
 	}
 
 	/**
-	 * Return the plugin slug.
-	 *
-	 * @since  1.2.0
-	 *
-	 * @return string Plugin slug variable.
-	 */
-	public static function get_plugin_slug() {
-		return self::$plugin_slug;
-	}
-
-	/**
-	 * Return the gateway id/slug.
-	 *
-	 * @since  1.2.0
-	 *
-	 * @return string Gateway id/slug variable.
-	 */
-	public static function get_gateway_id() {
-		return self::$gateway_id;
-	}
-
-	/**
 	 * Load the plugin text domain for translation.
-	 *
-	 * @since  1.2.0
 	 *
 	 * @return void
 	 */
 	public function load_plugin_textdomain() {
-		$domain = self::$plugin_slug;
-		$locale = apply_filters( 'plugin_locale', get_locale(), $domain );
+		$locale = apply_filters( 'plugin_locale', get_locale(), 'woocommerce-boleto' );
 
-		load_textdomain( $domain, trailingslashit( WP_LANG_DIR ) . $domain . '/' . $domain . '-' . $locale . '.mo' );
-		load_plugin_textdomain( $domain, false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+		load_textdomain( 'woocommerce-boleto', trailingslashit( WP_LANG_DIR ) . 'woocommerce-boleto/woocommerce-boleto-' . $locale . '.mo' );
+		load_plugin_textdomain( 'woocommerce-boleto', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 	}
 
 	/**
-	 * Initialize the plugin public actions.
+	 * Includes.
 	 *
-	 * @since  1.2.0
-	 *
-	 * @return  void
+	 * @return void
 	 */
-	protected function init() {
-		// Checks with WooCommerce is installed.
-		if ( class_exists( 'WC_Payment_Gateway' ) ) {
-			// Include the WC_Boleto_Gateway class.
-			include_once 'includes/class-wc-boleto-gateway.php';
+	private function includes() {
+		include_once 'includes/class-wc-boleto-gateway.php';
+	}
 
-			add_filter( 'woocommerce_payment_gateways', array( $this, 'add_gateway' ) );
-			add_action( 'init', array( $this, 'add_boleto_endpoint' ) );
-			add_action( 'template_redirect', array( $this, 'boleto_template' ) );
-			add_action( 'woocommerce_view_order', array( $this, 'pending_payment_message' ) );
-		} else {
-			add_action( 'admin_notices', array( $this, 'woocommerce_missing_notice' ) );
-		}
+	/**
+	 * Includes.
+	 *
+	 * @return void
+	 */
+	private function admin_includes() {
+		require_once 'includes/class-wc-boleto-admin.php';
 	}
 
 	/**
 	 * Add the gateway to WooCommerce.
-	 *
-	 * @since  1.2.0
 	 *
 	 * @param  array $methods WooCommerce payment methods.
 	 *
@@ -158,8 +121,6 @@ class WC_Boleto {
 
 	/**
 	 * Created the boleto endpoint.
-	 *
-	 * @since  1.2.0
 	 *
 	 * @return void
 	 */
@@ -190,8 +151,6 @@ class WC_Boleto {
 
 	/**
 	 * Add custom template page.
-	 *
-	 * @since  1.2.0
 	 *
 	 * @return string
 	 */
@@ -229,8 +188,6 @@ class WC_Boleto {
 	/**
 	 * Display pending payment message in order details.
 	 *
-	 * @since  1.2.0
-	 *
 	 * @param  int $order_id Order id.
 	 *
 	 * @return string        Message HTML.
@@ -240,12 +197,12 @@ class WC_Boleto {
 
 		if ( 'on-hold' === $order->status && 'boleto' == $order->payment_method ) {
 			$html = '<div class="woocommerce-info">';
-			$html .= sprintf( '<a class="button" href="%s" target="_blank">%s</a>', self::get_boleto_url( $order->order_key ), __( 'Pay the Boleto &rarr;', self::$plugin_slug ) );
+			$html .= sprintf( '<a class="button" href="%s" target="_blank" style="display: block !important; visibility: visible !important;">%s</a>', self::get_boleto_url( $order->order_key ), __( 'Pay the Ticket &rarr;', 'woocommerce-boleto' ) );
 
-			$message = sprintf( __( '%sAttention!%s Not registered the payment the docket for this product yet.', self::$plugin_slug ), '<strong>', '</strong>' ) . '<br />';
-			$message .= __( 'Please click the following button and pay the Boleto in your Internet Banking.', self::$plugin_slug ) . '<br />';
-			$message .= __( 'If you prefer, print and pay at any bank branch or home lottery.', self::$plugin_slug ) . '<br />';
-			$message .= __( 'Ignore this message if the payment has already been made​​.', self::$plugin_slug ) . '<br />';
+			$message = sprintf( __( '%sAttention!%s Not registered the payment the docket for this product yet.', 'woocommerce-boleto' ), '<strong>', '</strong>' ) . '<br />';
+			$message .= __( 'Please click the following button and pay the Ticket in your Internet Banking.', 'woocommerce-boleto' ) . '<br />';
+			$message .= __( 'If you prefer, print and pay at any bank branch or lottery retailer.', 'woocommerce-boleto' ) . '<br />';
+			$message .= __( 'Ignore this message if the payment has already been made​​.', 'woocommerce-boleto' ) . '<br />';
 
 			$html .= apply_filters( 'wcboleto_pending_payment_message', $message, $order );
 
@@ -258,12 +215,10 @@ class WC_Boleto {
 	/**
 	 * WooCommerce fallback notice.
 	 *
-	 * @since  1.2.0
-	 *
 	 * @return string
 	 */
 	public function woocommerce_missing_notice() {
-		echo '<div class="error"><p>' . sprintf( __( 'WooCommerce Boleto Gateway depends on the last version of %s to work!', self::$plugin_slug ), '<a href="http://wordpress.org/extend/plugins/woocommerce/">' . __( 'WooCommerce', self::$plugin_slug ) . '</a>' ) . '</p></div>';
+		echo '<div class="error"><p>' . sprintf( __( 'WooCommerce Boleto Gateway depends on the last version of %s to work!', 'woocommerce-boleto' ), '<a href="http://wordpress.org/extend/plugins/woocommerce/">' . __( 'WooCommerce', 'woocommerce-boleto' ) . '</a>' ) . '</p></div>';
 	}
 }
 
@@ -277,15 +232,6 @@ register_deactivation_hook( __FILE__, array( 'WC_Boleto', 'deactivate' ) );
  * Initialize the plugin.
  */
 add_action( 'plugins_loaded', array( 'WC_Boleto', 'get_instance' ), 0 );
-
-/**
- * Plugin admin.
- */
-if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) ) {
-	require_once 'includes/class-wc-boleto-admin.php';
-
-	add_action( 'plugins_loaded', array( 'WC_Boleto_Admin', 'get_instance' ) );
-}
 
 endif;
 
