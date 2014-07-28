@@ -5,7 +5,7 @@
  * Description: WooCommerce Boleto is a brazilian payment gateway for WooCommerce
  * Author: claudiosanches, deblyn
  * Author URI: http://claudiosmweb.com
- * Version: 1.4.0
+ * Version: 1.4.1
  * License: GPLv2 or later
  * Text Domain: woocommerce-boleto
  * Domain Path: /languages/
@@ -27,7 +27,7 @@ class WC_Boleto {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.4.0';
+	const VERSION = '1.4.1';
 
 	/**
 	 * Instance of this class.
@@ -55,7 +55,7 @@ class WC_Boleto {
 
 			add_filter( 'woocommerce_payment_gateways', array( $this, 'add_gateway' ) );
 			add_action( 'init', array( $this, 'add_boleto_endpoint' ) );
-			add_action( 'template_redirect', array( $this, 'boleto_template' ) );
+			add_action( 'template_include', array( $this, 'boleto_template' ) );
 			add_action( 'woocommerce_view_order', array( $this, 'pending_payment_message' ) );
 		} else {
 			add_action( 'admin_notices', array( $this, 'woocommerce_missing_notice' ) );
@@ -152,20 +152,18 @@ class WC_Boleto {
 	/**
 	 * Add custom template page.
 	 *
+	 * @param   [varname] [description]
+	 *
 	 * @return string
 	 */
-	public function boleto_template() {
+	public function boleto_template( $template ) {
 		global $wp_query;
 
-		if ( ! isset( $wp_query->query_vars['boleto'] ) ) {
-			return;
+		if ( isset( $wp_query->query_vars['boleto'] ) ) {
+			return plugin_dir_path( __FILE__ ) . 'templates/boleto.php';
 		}
 
-		// Support for plugin older versions.
-		$boleto_code = isset( $_GET['ref'] ) ? $_GET['ref'] : $wp_query->query_vars['boleto'];
-		include_once plugin_dir_path( __FILE__ ) . 'templates/boleto.php';
-
-		exit;
+		return $template;
 	}
 
 	/**
