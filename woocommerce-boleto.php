@@ -4,8 +4,8 @@
  * Plugin URI: https://github.com/claudiosmweb/woocommerce-boleto
  * Description: WooCommerce Boleto is a brazilian payment gateway for WooCommerce
  * Author: claudiosanches, deblyn
- * Author URI: http://claudiosmweb.com
- * Version: 1.4.1
+ * Author URI: https://claudiosmweb.com
+ * Version: 1.5.0
  * License: GPLv2 or later
  * Text Domain: woocommerce-boleto
  * Domain Path: /languages/
@@ -27,7 +27,7 @@ class WC_Boleto {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.4.1';
+	const VERSION = '1.5.0';
 
 	/**
 	 * Instance of this class.
@@ -54,9 +54,10 @@ class WC_Boleto {
 			}
 
 			add_filter( 'woocommerce_payment_gateways', array( $this, 'add_gateway' ) );
-			add_action( 'init', array( $this, 'add_boleto_endpoint' ) );
+			add_action( 'init', array( __CLASS__, 'add_boleto_endpoint' ) );
 			add_action( 'template_include', array( $this, 'boleto_template' ) );
 			add_action( 'woocommerce_view_order', array( $this, 'pending_payment_message' ) );
+			add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'plugin_action_links' ) );
 		} else {
 			add_action( 'admin_notices', array( $this, 'woocommerce_missing_notice' ) );
 		}
@@ -77,9 +78,16 @@ class WC_Boleto {
 	}
 
 	/**
-	 * Load the plugin text domain for translation.
+	 * Get plugin path.
 	 *
-	 * @return void
+	 * @return string
+	 */
+	public static function get_plugin_path() {
+		return plugin_dir_path( __FILE__ );
+	}
+
+	/**
+	 * Load the plugin text domain for translation.
 	 */
 	public function load_plugin_textdomain() {
 		$locale = apply_filters( 'plugin_locale', get_locale(), 'woocommerce-boleto' );
@@ -90,17 +98,14 @@ class WC_Boleto {
 
 	/**
 	 * Includes.
-	 *
-	 * @return void
 	 */
 	private function includes() {
+		include_once 'includes/wc-boleto-functions.php';
 		include_once 'includes/class-wc-boleto-gateway.php';
 	}
 
 	/**
 	 * Includes.
-	 *
-	 * @return void
 	 */
 	private function admin_includes() {
 		require_once 'includes/class-wc-boleto-admin.php';
@@ -121,29 +126,22 @@ class WC_Boleto {
 
 	/**
 	 * Created the boleto endpoint.
-	 *
-	 * @return void
 	 */
-	public function add_boleto_endpoint() {
+	public static function add_boleto_endpoint() {
 		add_rewrite_endpoint( 'boleto', EP_PERMALINK | EP_ROOT );
 	}
 
 	/**
 	 * Plugin activate method.
-	 *
-	 * @return void
 	 */
 	public static function activate() {
-		// Add the boleto endpoint.
-		add_rewrite_endpoint( 'boleto', EP_PERMALINK | EP_ROOT );
+		self::add_boleto_endpoint();
 
 		flush_rewrite_rules();
 	}
 
 	/**
 	 * Plugin deactivate method.
-	 *
-	 * @return void
 	 */
 	public static function deactivate() {
 		flush_rewrite_rules();
@@ -152,7 +150,7 @@ class WC_Boleto {
 	/**
 	 * Add custom template page.
 	 *
-	 * @param   [varname] [description]
+	 * @param  string $template
 	 *
 	 * @return string
 	 */
@@ -160,7 +158,7 @@ class WC_Boleto {
 		global $wp_query;
 
 		if ( isset( $wp_query->query_vars['boleto'] ) ) {
-			return plugin_dir_path( __FILE__ ) . 'templates/boleto.php';
+			return self::get_plugin_path() . 'includes/views/html-boleto.php';
 		}
 
 		return $template;
@@ -177,10 +175,12 @@ class WC_Boleto {
 		$home = esc_url( home_url( '/' ) );
 
 		if ( get_option( 'permalink_structure' ) ) {
-			return trailingslashit( $home ) . 'boleto/' . $code;
+			$url = trailingslashit( $home ) . 'boleto/' . $code;
 		} else {
-			return add_query_arg( array( 'boleto' => $code ), $home );
+			$url = add_query_arg( array( 'boleto' => $code ), $home );
 		}
+
+		return apply_filters( 'woocommerce_boleto_url', $url, $code, $home );
 	}
 
 	/**
@@ -195,7 +195,7 @@ class WC_Boleto {
 
 		if ( 'on-hold' === $order->status && 'boleto' == $order->payment_method ) {
 			$html = '<div class="woocommerce-info">';
-			$html .= sprintf( '<a class="button" href="%s" target="_blank" style="display: block !important; visibility: visible !important;">%s</a>', self::get_boleto_url( $order->order_key ), __( 'Pay the Ticket &rarr;', 'woocommerce-boleto' ) );
+			$html .= sprintf( '<a class="button" href="%s" target="_blank" style="display: block !important; visibility: visible !important;">%s</a>', wc_boleto_get_boleto_url( $order->order_key ), __( 'Pay the Ticket &rarr;', 'woocommerce-boleto' ) );
 
 			$message = sprintf( __( '%sAttention!%s Not registered the payment the docket for this product yet.', 'woocommerce-boleto' ), '<strong>', '</strong>' ) . '<br />';
 			$message .= __( 'Please click the following button and pay the Ticket in your Internet Banking.', 'woocommerce-boleto' ) . '<br />';
@@ -211,12 +211,33 @@ class WC_Boleto {
 	}
 
 	/**
+	 * Action links.
+	 *
+	 * @param  array $links
+	 *
+	 * @return array
+	 */
+	public function plugin_action_links( $links ) {
+		$plugin_links = array();
+
+		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.1', '>=' ) ) {
+			$settings_url = admin_url( 'admin.php?page=wc-settings&tab=checkout&section=wc_boleto_gateway' );
+		} else {
+			$settings_url = admin_url( 'admin.php?page=woocommerce_settings&tab=payment_gateways&section=WC_Boleto_Gateway' );
+		}
+
+		$plugin_links[] = '<a href="' . esc_url( $settings_url ) . '">' . __( 'Settings', 'woocommerce-boleto' ) . '</a>';
+
+		return array_merge( $plugin_links, $links );
+	}
+
+	/**
 	 * WooCommerce fallback notice.
 	 *
 	 * @return string
 	 */
 	public function woocommerce_missing_notice() {
-		echo '<div class="error"><p>' . sprintf( __( 'WooCommerce Boleto Gateway depends on the last version of %s to work!', 'woocommerce-boleto' ), '<a href="http://wordpress.org/extend/plugins/woocommerce/">' . __( 'WooCommerce', 'woocommerce-boleto' ) . '</a>' ) . '</p></div>';
+		include_once 'includes/views/html-notice-woocommerce-missing.php';
 	}
 }
 
@@ -229,15 +250,6 @@ register_deactivation_hook( __FILE__, array( 'WC_Boleto', 'deactivate' ) );
 /**
  * Initialize the plugin.
  */
-add_action( 'plugins_loaded', array( 'WC_Boleto', 'get_instance' ), 0 );
+add_action( 'plugins_loaded', array( 'WC_Boleto', 'get_instance' ) );
 
 endif;
-
-/**
- * Assets URL.
- *
- * @return string
- */
-function wcboleto_assets_url() {
-	return plugin_dir_url( __FILE__ ) . 'assets/';
-}

@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * WC Boleto Gateway Class.
  *
@@ -7,15 +11,14 @@
 class WC_Boleto_Gateway extends WC_Payment_Gateway {
 
 	/**
-	 * Gateway's Constructor.
-	 *
-	 * @return void
+	 * Initialize the gateway actions.
 	 */
 	public function __construct() {
-		$this->id           = 'boleto';
-		$this->icon         = apply_filters( 'wcboleto_icon', plugins_url( 'assets/images/boleto.png', plugin_dir_path( __FILE__ ) ) );
-		$this->has_fields   = false;
-		$this->method_title = __( 'Banking Ticket', 'woocommerce-boleto' );
+		$this->id                 = 'boleto';
+		$this->icon               = apply_filters( 'wcboleto_icon', plugins_url( 'assets/images/boleto.png', plugin_dir_path( __FILE__ ) ) );
+		$this->has_fields         = false;
+		$this->method_title       = __( 'Banking Ticket', 'woocommerce-boleto' );
+		$this->method_description = __( 'Enables payments via Banking Ticket.', 'woocommerce-boleto' );
 
 		// Load the settings.
 		$this->init_form_fields();
@@ -30,37 +33,6 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 		add_action( 'woocommerce_thankyou_boleto', array( $this, 'thankyou_page' ) );
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_instructions' ), 10, 2 );
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
-
-		// Display admin notices.
-		$this->admin_notices();
-	}
-
-	/**
-	 * Backwards compatibility with version prior to 2.1.
-	 *
-	 * @return object Returns the main instance of WooCommerce class.
-	 */
-	protected function woocommerce_instance() {
-		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.1', '>=' ) ) {
-			return WC();
-		} else {
-			global $woocommerce;
-			return $woocommerce;
-		}
-	}
-
-	/**
-	 * Displays notifications when the admin has something wrong with the configuration.
-	 *
-	 * @return void
-	 */
-	protected function admin_notices() {
-		if ( is_admin() ) {
-			// Checks that the currency is supported
-			if ( ! $this->using_supported_currency() ) {
-				add_action( 'admin_notices', array( $this, 'currency_not_supported_message' ) );
-			}
-		}
 	}
 
 	/**
@@ -92,20 +64,11 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 	 * @return string Admin form.
 	 */
 	public function admin_options() {
-		echo '<h3>' . __( 'Banking Ticket', 'woocommerce-boleto' ) . '</h3>';
-		echo '<p>' . __( 'Enables payments via Banking Ticket.', 'woocommerce-boleto' ) . '</p>';
-
-		// Generate the HTML For the settings form.
-		echo '<table class="form-table">';
-		$this->generate_settings_html();
-		echo '</table>';
-		echo '<script type="text/javascript" src="' . plugins_url( 'assets/js/admin.js', plugin_dir_path( __FILE__ ) ) . '"></script>';
+		include 'views/html-admin-page.php';
 	}
 
 	/**
-	 * Start Gateway Settings Form Fields.
-	 *
-	 * @return void
+	 * Gateway options.
 	 */
 	public function init_form_fields() {
 		$shop_name = get_bloginfo( 'name' );
@@ -171,7 +134,8 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 					'nossacaixa' => __( 'Nossa Caixa', 'woocommerce-boleto' ),
 					'real'       => __( 'Real', 'woocommerce-boleto' ),
 					'santander'  => __( 'Santander', 'woocommerce-boleto' ),
-					'unibanco'   => __( 'Unibanco', 'woocommerce-boleto' )
+					'unibanco'   => __( 'Unibanco', 'woocommerce-boleto' ),
+					'bancoob'    => __( 'Bancoob', 'woocommerce-boleto')
 				)
 			)
 		);
@@ -293,9 +257,8 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 	 * @return array Current bank fields.
 	 */
 	protected function get_bank_fields() {
-
 		switch ( $this->get_option( 'bank' ) ) {
-			case 'bb':
+			case 'bb' :
 				$fields = array(
 					'agencia' => array(
 						'title'       => __( 'Agency', 'woocommerce-boleto' ),
@@ -342,7 +305,30 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 					)
 				);
 				break;
-			case 'bradesco':
+			case 'bancoob' :
+				$fields = array(
+						'agencia' => array(
+							'title'       => __( 'Agency', 'woocommerce-boleto' ),
+							'type'        => 'text',
+							'description' => __( 'Agency number without digit.', 'woocommerce-boleto' )
+						),
+						'conta' => array(
+							'title'       => __( 'Account', 'woocommerce-boleto' ),
+							'type'        => 'text',
+							'description' => __( 'Account number without digit.', 'woocommerce-boleto' )
+						),
+						'convenio' => array(
+							'title'       => __( 'Agreement number', 'woocommerce-boleto' ),
+							'type'        => 'text',
+							'description' => __( 'Agreements with 6, 7 or 8 digits.', 'woocommerce-boleto' )
+						),
+						'carteira' => array(
+							'title' => __( 'Wallet code', 'woocommerce-boleto' ),
+							'type'  => 'text'
+						),
+					);
+				break;
+			case 'bradesco' :
 				$fields = array(
 					'agencia' => array(
 						'title'       => __( 'Agency', 'woocommerce-boleto' ),
@@ -384,7 +370,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 					)
 				);
 				break;
-			case 'cef':
+			case 'cef' :
 				$fields = array(
 					'agencia' => array(
 						'title'       => __( 'Agency', 'woocommerce-boleto' ),
@@ -427,7 +413,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 					)
 				);
 				break;
-			case 'cef_sigcb':
+			case 'cef_sigcb' :
 				$fields = array(
 					'agencia' => array(
 						'title'       => __( 'Agency', 'woocommerce-boleto' ),
@@ -460,7 +446,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 					)
 				);
 				break;
-			case 'cef_sinco':
+			case 'cef_sinco' :
 				$fields = array(
 					'agencia' => array(
 						'title'       => __( 'Agency', 'woocommerce-boleto' ),
@@ -497,7 +483,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 					),
 				);
 				break;
-			case 'hsbc':
+			case 'hsbc' :
 				$fields = array(
 					'codigo_cedente' => array(
 						'title'       => __( 'Transferor code', 'woocommerce-boleto' ),
@@ -515,7 +501,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 					)
 				);
 				break;
-			case 'itau':
+			case 'itau' :
 				$fields = array(
 					'agencia' => array(
 						'title'       => __( 'Agency', 'woocommerce-boleto' ),
@@ -546,7 +532,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 					)
 				);
 				break;
-			case 'nossacaixa':
+			case 'nossacaixa' :
 				$fields = array(
 					'agencia' => array(
 						'title'       => __( 'Agency', 'woocommerce-boleto' ),
@@ -578,7 +564,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 					)
 				);
 				break;
-			case 'real':
+			case 'real' :
 				$fields = array(
 					'agencia' => array(
 						'title'       => __( 'Agency', 'woocommerce-boleto' ),
@@ -596,7 +582,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 					)
 				);
 				break;
-			case 'santander':
+			case 'santander' :
 				$fields = array(
 					'codigo_cliente' => array(
 						'title'       => __( 'Customer code', 'woocommerce-boleto' ),
@@ -620,7 +606,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 					)
 				);
 				break;
-			case 'unibanco':
+			case 'unibanco' :
 				$fields = array(
 					'agencia' => array(
 						'title'       => __( 'Agency', 'woocommerce-boleto' ),
@@ -647,7 +633,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 				);
 				break;
 
-			default:
+			default :
 				$fields = array();
 				break;
 		}
@@ -674,12 +660,15 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 		// Reduce stock levels.
 		$order->reduce_order_stock();
 
-		// Remove cart.
-		$this->woocommerce_instance()->cart->empty_cart();
-
 		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.1', '>=' ) ) {
+			WC()->cart->empty_cart();
+
 			$url = $order->get_checkout_order_received_url();
 		} else {
+			global $woocommerce;
+
+			$woocommerce->cart->empty_cart();
+
 			$url = add_query_arg( 'key', $order->order_key, add_query_arg( 'order', $order_id, get_permalink( woocommerce_get_page_id( 'thanks' ) ) ) );
 		}
 
@@ -697,7 +686,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 	 */
 	public function thankyou_page() {
 		$html = '<div class="woocommerce-message">';
-		$html .= sprintf( '<a class="button" href="%s" target="_blank">%s</a>', WC_Boleto::get_boleto_url( $_GET['key'] ), __( 'Pay the Ticket &rarr;', 'woocommerce-boleto' ) );
+		$html .= sprintf( '<a class="button" href="%s" target="_blank" style="display: block !important; visibility: visible !important;">%s</a>', wc_boleto_get_boleto_url( $_GET['key'] ), __( 'Pay the Ticket &rarr;', 'woocommerce-boleto' ) );
 
 		$message = sprintf( __( '%sAttention!%s You will not get the ticket by Correios.', 'woocommerce-boleto' ), '<strong>', '</strong>' ) . '<br />';
 		$message .= __( 'Please click the following button and pay the Ticket in your Internet Banking.', 'woocommerce-boleto' ) . '<br />';
@@ -716,8 +705,6 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 	 * Generate ticket data.
 	 *
 	 * @param  object $order Order object.
-	 *
-	 * @return void
 	 */
 	public function generate_boleto_data( $order ) {
 		// Ticket data.
@@ -754,7 +741,7 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 
 		$html .= apply_filters( 'wcboleto_email_instructions', $message );
 
-		$html .= '<br />' . sprintf( '<a class="button" href="%s" target="_blank">%s</a>', WC_Boleto::get_boleto_url( $order->order_key ), __( 'Pay the Ticket &rarr;', 'woocommerce-boleto' ) ) . '<br />';
+		$html .= '<br />' . sprintf( '<a class="button" href="%s" target="_blank">%s</a>', wc_boleto_get_boleto_url( $order->order_key ), __( 'Pay the Ticket &rarr;', 'woocommerce-boleto' ) ) . '<br />';
 
 		$html .= '<strong style="font-size: 0.8em">' . sprintf( __( 'Validity of the Ticket: %s.', 'woocommerce-boleto' ), date( 'd/m/Y', time() + ( absint( $this->boleto_time ) * 86400 ) ) ) . '</strong>';
 
@@ -762,27 +749,4 @@ class WC_Boleto_Gateway extends WC_Payment_Gateway {
 
 		echo $html;
 	}
-
-	/**
-	 * Gets the admin url.
-	 *
-	 * @return string
-	 */
-	protected function admin_url() {
-		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.1', '>=' ) ) {
-			return admin_url( 'admin.php?page=wc-settings&tab=checkout&section=wc_boleto_gateway' );
-		}
-
-		return admin_url( 'admin.php?page=woocommerce_settings&tab=payment_gateways&section=WC_Boleto_Gateway' );
-	}
-
-	/**
-	 * Adds error message when an unsupported currency is used.
-	 *
-	 * @return string
-	 */
-	public function currency_not_supported_message() {
-		echo '<div class="error"><p><strong>' . __( 'Boleto Disabled', 'woocommerce-boleto' ) . '</strong>: ' . sprintf( __( 'Currency <code>%s</code> is not supported. Works only with <code>BRL</code> (Brazilian Real).', 'woocommerce-boleto' ), get_woocommerce_currency() ) . '</p></div>';
-	}
-
 }

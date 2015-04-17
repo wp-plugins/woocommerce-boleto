@@ -1,19 +1,15 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
 /**
  * Boleto Admin.
- *
- * @since 1.0.0
  */
 class WC_Boleto_Admin {
 
 	/**
 	 * Initialize the admin.
-	 *
-	 * @since 1.2.0
 	 */
 	public function __construct() {
 		// Add metabox.
@@ -24,12 +20,13 @@ class WC_Boleto_Admin {
 
 		// Update.
 		add_action( 'admin_init', array( $this, 'update' ), 5 );
+
+		// Load scripts in gateway settings page.
+		add_action( 'admin_enqueue_scripts', array( $this, 'scripts' ) );
 	}
 
 	/**
 	 * Register boleto metabox.
-	 *
-	 * @return void
 	 */
 	public function register_metabox() {
 		add_meta_box(
@@ -76,7 +73,7 @@ class WC_Boleto_Admin {
 			}
 
 			$html = '<p><strong>' . __( 'Expiration date:', 'woocommerce-boleto' ) . '</strong> ' . $boleto_data['data_vencimento'] . '</p>';
-			$html .= '<p><strong>' . __( 'URL:', 'woocommerce-boleto' ) . '</strong> <a target="_blank" href="' . WC_Boleto::get_boleto_url( $order->order_key ) . '">' . __( 'View boleto', 'woocommerce-boleto' ) . '</a></p>';
+			$html .= '<p><strong>' . __( 'URL:', 'woocommerce-boleto' ) . '</strong> <a target="_blank" href="' . wc_boleto_get_boleto_url( $order->order_key ) . '">' . __( 'View boleto', 'woocommerce-boleto' ) . '</a></p>';
 
 			$html .= '<p style="border-top: 1px solid #ccc;"></p>';
 
@@ -95,9 +92,7 @@ class WC_Boleto_Admin {
 	/**
 	 * Save metabox data.
 	 *
-	 * @param  int $post_id Current post type ID.
-	 *
-	 * @return void
+	 * @param int $post_id Current post type ID.
 	 */
 	public function save( $post_id ) {
 		// Verify nonce.
@@ -137,10 +132,8 @@ class WC_Boleto_Admin {
 	/**
 	 * New expiration date email notification.
 	 *
-	 * @param  object $order           Order data.
-	 * @param  string $expiration_date Ticket expiration date.
-	 *
-	 * @return void
+	 * @param object $order           Order data.
+	 * @param string $expiration_date Ticket expiration date.
 	 */
 	protected function email_notification( $order, $expiration_date ) {
 		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.1', '>=' ) ) {
@@ -158,7 +151,7 @@ class WC_Boleto_Admin {
 
 		// Body message.
 		$main_message = '<p>' . sprintf( __( 'The expiration date of your boleto was updated to: %s', 'woocommerce-boleto' ), '<code>' . $expiration_date . '</code>' ) . '</p>';
-		$main_message .= '<p>' . sprintf( '<a class="button" href="%s" target="_blank">%s</a>', WC_Boleto::get_boleto_url( $order->order_key ), __( 'Pay the Ticket &rarr;', 'woocommerce-boleto' ) ) . '</p>';
+		$main_message .= '<p>' . sprintf( '<a class="button" href="%s" target="_blank">%s</a>', wc_boleto_get_boleto_url( $order->order_key ), __( 'Pay the Ticket &rarr;', 'woocommerce-boleto' ) ) . '</p>';
 
 		// Sets message template.
 		$message = $mailer->wrap_message( __( 'New expiration date for your boleto', 'woocommerce-boleto' ), $main_message );
@@ -168,9 +161,20 @@ class WC_Boleto_Admin {
 	}
 
 	/**
-	 * Performance an update to all options.
+	 * Admin scripts.
 	 *
-	 * @return void
+	 * @param string $hook Page slug.
+	 */
+	public function scripts( $hook ) {
+		if ( in_array( $hook, array( 'woocommerce_page_wc-settings', 'woocommerce_page_woocommerce_settings' ) ) && ( isset( $_GET['section'] ) && 'wc_boleto_gateway' == strtolower( $_GET['section'] ) ) ) {
+			$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+
+			wp_enqueue_script( 'wc-boleto-admin', plugins_url( 'assets/js/admin' . $suffix . '.js', plugin_dir_path( __FILE__ ) ), array( 'jquery' ), WC_Boleto::VERSION, true );
+		}
+	}
+
+	/**
+	 * Performance an update to all options.
 	 */
 	public function update() {
 		$db_version = get_option( 'woocommerce_boleto_db_version' );
