@@ -3,9 +3,9 @@
  * Plugin Name: WooCommerce Boleto
  * Plugin URI: https://github.com/claudiosmweb/woocommerce-boleto
  * Description: WooCommerce Boleto is a brazilian payment gateway for WooCommerce
- * Author: claudiosanches, deblyn
+ * Author: Claudio Sanches
  * Author URI: https://claudiosmweb.com
- * Version: 1.5.1
+ * Version: 1.5.2
  * License: GPLv2 or later
  * Text Domain: woocommerce-boleto
  * Domain Path: /languages/
@@ -27,7 +27,7 @@ class WC_Boleto {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.5.1';
+	const VERSION = '1.5.2';
 
 	/**
 	 * Instance of this class.
@@ -55,7 +55,7 @@ class WC_Boleto {
 
 			add_filter( 'woocommerce_payment_gateways', array( $this, 'add_gateway' ) );
 			add_action( 'init', array( __CLASS__, 'add_boleto_endpoint' ) );
-			add_action( 'template_include', array( $this, 'boleto_template' ) );
+			add_action( 'template_include', array( $this, 'boleto_template' ), 9999 );
 			add_action( 'woocommerce_view_order', array( $this, 'pending_payment_message' ) );
 			add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'plugin_action_links' ) );
 		} else {
